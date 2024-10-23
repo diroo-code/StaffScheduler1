@@ -1,12 +1,22 @@
-﻿using System;
-using staffschedulerlibrary.Models;
+﻿using staffschedulerlibrary.Models;
+using Google.Cloud.Firestore;
+using System;
+using System.Collections.Generic;
+using System.Threading.Tasks;
 
 namespace StaffScheduler
 {
     class Program
     {
-        static void Main(string[] args)
+        static async Task Main(string[] args) // Changed to async to handle Firestore operations
         {
+            // Initialize FirestoreManager with your Firebase project ID and the JSON credentials file path
+            string projectId = "staffscheduler-369a1"; // Replace with Firebase project ID
+            string credentialsFilePath = @"C:\Users\HP\Downloads\staffscheduler-369a1-firebase-adminsdk-zwe3k-d3e456ae2f.json";
+
+            // Initialize FirestoreManager
+            FirestoreManager firestoreManager = new FirestoreManager(projectId, credentialsFilePath);
+
             // Create StaffList and ShiftList
             StaffList staffList = new StaffList();
             ShiftList shiftList = new ShiftList();
@@ -14,8 +24,20 @@ namespace StaffScheduler
             // Get user input to add staff
             AddStaff(staffList);
 
+            // Save staff to Firestore
+            foreach (var staff in staffList.StaffMembers)
+            {
+                await firestoreManager.SaveStaffAsync(staff); // Save staff to Firestore
+            }
+
             // Get user input to add shifts
             AddShifts(shiftList);
+
+            // Save shifts to Firestore
+            foreach (var shift in shiftList.Shifts)
+            {
+                await firestoreManager.SaveShiftAsync(shift); // Save shift to Firestore
+            }
 
             // Assign staff to shifts
             AssignStaffToShift(staffList, shiftList);
@@ -65,10 +87,11 @@ namespace StaffScheduler
                 int shiftId = int.Parse(Console.ReadLine());
 
                 Console.Write("Shift Start Time (e.g., yyyy-mm-dd hh:mm:ss): ");
-                DateTime startTime = DateTime.Parse(Console.ReadLine());
+                DateTime startTime = DateTime.Parse(Console.ReadLine()).ToUniversalTime();
 
                 Console.Write("Shift End Time (e.g., yyyy-mm-dd hh:mm:ss): ");
-                DateTime endTime = DateTime.Parse(Console.ReadLine());
+                DateTime endTime = DateTime.Parse(Console.ReadLine()).ToUniversalTime();
+
 
                 // Add the shift to the list
                 Shift shift = new Shift { ShiftId = shiftId, StartTime = startTime, EndTime = endTime };
